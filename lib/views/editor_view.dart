@@ -5,13 +5,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../models/reel_idea.dart';
 import '../viewmodels/reel_provider.dart';
 
 class EditorView extends StatefulWidget {
   final ReelIdea reel;
-
   const EditorView({super.key, required this.reel});
 
   @override
@@ -22,10 +22,23 @@ class _EditorViewState extends State<EditorView> {
   late TextEditingController _scriptController;
   final ScreenshotController _screenshotController = ScreenshotController();
 
-  // New State variables for customization
+  // --- NEW: Expanded State Variables ---
   Color _textColor = Colors.white;
   TextAlign _textAlign = TextAlign.center;
   bool _isExporting = false;
+
+  double _fontSize = 28.0;
+  double _bgOpacity = 0.5; // Controls how dark the background overlay is
+  String _selectedFont = 'Montserrat'; // Default premium font
+
+  // A small list of aesthetic fonts to choose from
+  final List<String> _fontOptions = [
+    'Montserrat',
+    'Playfair Display',
+    'Oswald',
+    'Bebas Neue',
+    'Caveat',
+  ];
 
   @override
   void initState() {
@@ -39,24 +52,16 @@ class _EditorViewState extends State<EditorView> {
     super.dispose();
   }
 
-  // --- THE EXPORT LOGIC ---
   Future<void> _exportAndShare() async {
     setState(() => _isExporting = true);
     try {
-      // 1. Capture the Stack as a byte array
-      final imageBytes = await _screenshotController.capture(
-        pixelRatio: 3.0,
-      ); // High-res capture
-
+      final imageBytes = await _screenshotController.capture(pixelRatio: 3.0);
       if (imageBytes != null) {
-        // 2. Save it to a temporary file
         final directory = await getApplicationDocumentsDirectory();
         final imagePath = await File(
           '${directory.path}/reel_${widget.reel.id}.png',
         ).create();
         await imagePath.writeAsBytes(imageBytes);
-
-        // 3. Share it using native OS share sheet
         await Share.shareXFiles([
           XFile(imagePath.path),
         ], text: 'Check out my new reel idea!');
@@ -70,24 +75,40 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
+  // Helper method to get the right Google Font
+  TextStyle _getGoogleFont() {
+    switch (_selectedFont) {
+      case 'Playfair Display':
+        return GoogleFonts.playfairDisplay();
+      case 'Oswald':
+        return GoogleFonts.oswald();
+      case 'Bebas Neue':
+        return GoogleFonts.bebasNeue();
+      case 'Caveat':
+        return GoogleFonts.caveat();
+      default:
+        return GoogleFonts.montserrat();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<ReelProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.reel.title),
+        title: const Text('Reel Editor'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
+            icon: const Icon(Icons.check),
             onPressed: () {
               context.read<ReelProvider>().updateScript(
                 widget.reel,
                 _scriptController.text,
               );
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Saved!')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Saved to database!')),
+              );
             },
           ),
         ],
@@ -95,16 +116,15 @@ class _EditorViewState extends State<EditorView> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // --- WRAP THE STACK IN SCREENSHOT WIDGET ---
+            // --- 1. THE CANVAS ---
             Screenshot(
               controller: _screenshotController,
               child: Container(
                 width: double.infinity,
-                height: 600,
+                height: 550, // Slightly shorter to make room for controls
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  // Remove border radius during export so the final image is a perfect rectangle
+                  color: Colors.black,
                   borderRadius: BorderRadius.circular(_isExporting ? 0 : 16),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -112,26 +132,23 @@ class _EditorViewState extends State<EditorView> {
                   alignment: Alignment.center,
                   fit: StackFit.expand,
                   children: [
+                    // Layer 1: Background
                     widget.reel.backgroundImageUrl != null
                         ? CachedNetworkImage(
                             imageUrl: widget.reel.backgroundImageUrl!,
                             fit: BoxFit.cover,
                           )
-                        : const Center(child: Text('No Background')),
+                        : const Center(
+                            child: Text(
+                              'Tap "New BG" below',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
 
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.8),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // Layer 2: Dynamic Dimming Overlay
+                    Container(color: Colors.black.withOpacity(_bgOpacity)),
 
+                    // Layer 3: Text Customization
                     Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Center(
@@ -140,13 +157,17 @@ class _EditorViewState extends State<EditorView> {
                               ? 'Type below...'
                               : _scriptController.text,
                           textAlign: _textAlign,
-                          style: TextStyle(
+                          style: _getGoogleFont().copyWith(
                             color: _textColor,
-                            fontSize: 28,
+                            fontSize: _fontSize,
                             fontWeight: FontWeight.bold,
-                            height: 1.3,
-                            shadows: const [
-                              Shadow(color: Colors.black, blurRadius: 10),
+                            height: 1.2,
+                            // Dynamic shadow based on text color
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.8),
+                                blurRadius: 10,
+                              ),
                             ],
                           ),
                         ),
@@ -157,88 +178,144 @@ class _EditorViewState extends State<EditorView> {
               ),
             ),
 
-            // --- NEW: STYLING TOOLBAR ---
-            Padding(
+            // --- 2. THE CONTROL PANEL ---
+            Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.format_align_left),
-                    onPressed: () =>
-                        setState(() => _textAlign = TextAlign.left),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.format_align_center),
-                    onPressed: () =>
-                        setState(() => _textAlign = TextAlign.center),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.circle, color: Colors.white),
-                    onPressed: () => setState(() => _textColor = Colors.white),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.circle, color: Colors.yellowAccent),
-                    onPressed: () =>
-                        setState(() => _textColor = Colors.yellowAccent),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.circle, color: Colors.greenAccent),
-                    onPressed: () =>
-                        setState(() => _textColor = Colors.greenAccent),
-                  ),
-                ],
-              ),
-            ),
-
-            // --- CONTROLS ---
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => context
-                          .read<ReelProvider>()
-                          .fetchNewBackground(widget.reel),
-                      icon: const Icon(Icons.wallpaper),
-                      label: const Text('New BG'),
+                  // Text Input
+                  TextField(
+                    controller: _scriptController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your quote or script...',
+                      border: OutlineInputBorder(),
+                      filled: true,
                     ),
+                    onChanged: (text) => setState(() {}),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isExporting ? null : _exportAndShare,
-                      icon: _isExporting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.share),
-                      label: const Text('Export'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                  const SizedBox(height: 16),
+
+                  // Sliders for Size and Dimming
+                  Row(
+                    children: [
+                      const Icon(Icons.format_size, size: 20),
+                      Expanded(
+                        child: Slider(
+                          value: _fontSize,
+                          min: 16.0,
+                          max: 60.0,
+                          onChanged: (val) => setState(() => _fontSize = val),
+                        ),
                       ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.brightness_4, size: 20),
+                      Expanded(
+                        child: Slider(
+                          value: _bgOpacity,
+                          min: 0.0,
+                          max: 0.9,
+                          activeColor: Colors.grey,
+                          onChanged: (val) => setState(() => _bgOpacity = val),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Font & Alignment Toolbar
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Font Dropdown
+                        DropdownButton<String>(
+                          value: _selectedFont,
+                          items: _fontOptions.map((String font) {
+                            return DropdownMenuItem<String>(
+                              value: font,
+                              child: Text(
+                                font,
+                                style: TextStyle(fontFamily: font),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) =>
+                              setState(() => _selectedFont = val!),
+                        ),
+                        const SizedBox(width: 16),
+                        // Formatting
+                        IconButton(
+                          icon: const Icon(Icons.format_align_left),
+                          onPressed: () =>
+                              setState(() => _textAlign = TextAlign.left),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.format_align_center),
+                          onPressed: () =>
+                              setState(() => _textAlign = TextAlign.center),
+                        ),
+                        // Quick Colors
+                        IconButton(
+                          icon: const Icon(Icons.circle, color: Colors.white),
+                          onPressed: () =>
+                              setState(() => _textColor = Colors.white),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.circle,
+                            color: Colors.yellowAccent,
+                          ),
+                          onPressed: () =>
+                              setState(() => _textColor = Colors.yellowAccent),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
 
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _scriptController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Edit Script',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (text) => setState(() {}),
+                  const SizedBox(height: 16),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context
+                              .read<ReelProvider>()
+                              .fetchNewBackground(widget.reel),
+                          icon: const Icon(Icons.wallpaper),
+                          label: const Text('New Image'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isExporting ? null : _exportAndShare,
+                          icon: _isExporting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.ios_share),
+                          label: const Text('Export Reel'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurpleAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32), // Bottom padding
+                ],
               ),
             ),
           ],
