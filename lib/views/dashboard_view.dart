@@ -9,7 +9,6 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the provider for changes to the reels list
     final reels = context.watch<ReelProvider>().reels;
 
     return Scaffold(
@@ -47,7 +46,7 @@ class DashboardView extends StatelessWidget {
                       );
                     },
                     onLongPress: () {
-                      // Delete on long press for quick management
+                      // Delete
                       context.read<ReelProvider>().deleteReel(reel);
                     },
                   ),

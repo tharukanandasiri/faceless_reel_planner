@@ -17,7 +17,7 @@ class ReelIdea extends HiveObject {
   String? backgroundImageUrl;
 
   @HiveField(4)
-  String status; // e.g., 'Idea', 'Scripting', 'Ready'
+  String status;
 
   ReelIdea({
     required this.id,

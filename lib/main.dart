@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'models/reel_idea.dart';
 import 'viewmodels/reel_provider.dart';
 import 'views/dashboard_view.dart';
-// import 'views/dashboard_view.dart'; // We will build this next
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,9 +28,9 @@ class FacelessReelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Faceless Reel Planner',
-      debugShowCheckedModeBanner: false, // Cleaner look for screenshots!
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: const DashboardView(), // Now pointing to your new Dashboard
+      home: const DashboardView(),
     );
   }
 }

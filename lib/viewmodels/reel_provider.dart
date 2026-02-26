@@ -23,7 +23,7 @@ class ReelProvider extends ChangeNotifier {
     final newUrl = await _unsplashService.fetchAestheticBackground();
     if (newUrl != null) {
       reel.backgroundImageUrl = newUrl;
-      await reel.save(); // HiveObject makes this easy
+      await reel.save();
       notifyListeners();
     }
   }

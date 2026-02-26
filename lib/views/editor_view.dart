@@ -28,10 +28,10 @@ class _EditorViewState extends State<EditorView> {
   bool _isExporting = false;
 
   double _fontSize = 28.0;
-  double _bgOpacity = 0.5; // Controls how dark the background overlay is
+  double _bgOpacity = 0.5;
   String _selectedFont = 'Montserrat'; // Default premium font
 
-  // A small list of aesthetic fonts to choose from
+  // List of fonts
   final List<String> _fontOptions = [
     'Montserrat',
     'Playfair Display',
@@ -75,7 +75,7 @@ class _EditorViewState extends State<EditorView> {
     }
   }
 
-  // Helper method to get the right Google Font
+  // Get Google Font
   TextStyle _getGoogleFont() {
     switch (_selectedFont) {
       case 'Playfair Display':
@@ -162,7 +162,7 @@ class _EditorViewState extends State<EditorView> {
                             fontSize: _fontSize,
                             fontWeight: FontWeight.bold,
                             height: 1.2,
-                            // Dynamic shadow based on text color
+                            // Dynamic shadow
                             shadows: [
                               Shadow(
                                 color: Colors.black.withOpacity(0.8),
@@ -197,7 +197,7 @@ class _EditorViewState extends State<EditorView> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Sliders for Size and Dimming
+                  // Sliders
                   Row(
                     children: [
                       const Icon(Icons.format_size, size: 20),
